@@ -1,1 +1,186 @@
-Hello World
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREEN-API Methods</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
+            border-radius: 5px;
+            padding: 20px;
+        }
+
+        .request,
+        .response {
+            flex: 1;
+        }
+
+        input,
+        select,
+        button {
+            padding: 10px;
+            margin: 5px 0;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: calc(100% - 24px);
+            box-sizing: border-box;
+        }
+
+        button {
+            cursor: pointer;
+            background-color: #f0f0f0;
+            border: 1px solid #bbb;
+            text-align: left;
+        }
+
+        small {
+            color: red;
+            display: none;
+        }
+
+        h2 {
+            margin-top: 20px;
+        }
+
+        .output {
+            white-space: pre-wrap;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <div class="request">
+        <h2>Настройки подключения</h2>
+        <label for="idInstance">ID Instance</label>
+        <input type="text" id="idInstance" placeholder="ID Instance" required>
+        <label for="apiTokenInstance">API Token Instance</label>
+        <input type="text" id="apiTokenInstance" placeholder="API Token Instance" required>
+
+        <h2>Get Settings</h2>
+        <button onclick="getSettings()">Получить настройки</button>
+
+        <h2>Get State Instance</h2>
+        <button onclick="getStateInstance()">Получить состояние</button>
+
+        <h2>Отправить Сообщение</h2>
+        <label for="chatId">Номер телефона или чата</label>
+        <input type="text" id="chatId" placeholder="Номер телефона или чата (без знаков)" oninput="validateInput(this, 'warning', true)" required>
+        <small id="warning">Пожалуйста, вводите только цифры.</small>
+
+        <label for="message">Сообщение</label>
+        <input type="text" id="message" placeholder="Сообщение" required>
+        <button onclick="sendMessage()">Отправить сообщение</button>
+
+        <h2>Отправить файл по URL</h2>
+        <label for="chatIdFile">Номер телефона или чата</label>
+        <input type="text" id="chatIdFile" placeholder="Номер телефона или чата (только цифры)" oninput="validateInput(this, 'warningFile', true)" required>
+        <small id="warningFile">Пожалуйста, вводите только цифры.</small>
+
+        <label for="urlFile">Ссылка на файл</label>
+        <input type="text" id="urlFile" placeholder="Ссылка на файл" required>
+
+        <label for="fileName">Название файла с расширением</label>
+        <input type="text" id="fileName" placeholder="Название файла" required>
+
+        <label for="caption">Описание</label>
+        <input type="text" id="caption" placeholder="Описание">
+        <button onclick="sendFileByUrl()">Отправить файл</button>
+    </div>
+    <div class="response">
+        <h2>Ответ:</h2>
+        <div id="response" class="output"></div>
+    </div>
+</div>
+
+<script>
+    async function fetchApi(endpoint, method = 'GET', body = null) {
+        try {
+            const response = await fetch(endpoint, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: body ? JSON.stringify(body) : null
+            });
+            if (!response.ok) {
+                throw new Error(`Ошибка ${response.status}: ${response.statusText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            displayResponse({ error: error.message });
+        }
+    }
+
+    function getSettings() {
+        const idInstance = document.getElementById('idInstance').value;
+        const apiTokenInstance = document.getElementById('apiTokenInstance').value;
+        fetchApi(`https://api.green-api.com/waInstance${idInstance}/getSettings/${apiTokenInstance}`)
+            .then(data => displayResponse(data));
+    }
+
+    function getStateInstance() {
+        const idInstance = document.getElementById('idInstance').value;
+        const apiTokenInstance = document.getElementById('apiTokenInstance').value;
+        fetchApi(`https://api.green-api.com/waInstance${idInstance}/getStateInstance/${apiTokenInstance}`)
+            .then(data => displayResponse(data));
+    }
+
+    function validateInput(input, warningId, isNumeric) {
+        const warning = document.getElementById(warningId);
+        if (isNumeric && /\D/.test(input.value)) {
+            warning.style.display = 'block';
+            input.value = input.value.replace(/\D/g, '');
+        } else {
+            warning.style.display = 'none';
+        }
+    }
+
+    function sendMessage() {
+        const idInstance = document.getElementById('idInstance').value;
+        const apiTokenInstance = document.getElementById('apiTokenInstance').value;
+        const chatId = document.getElementById('chatId').value;
+        const message = document.getElementById('message').value;
+
+        fetchApi(`https://api.green-api.com/waInstance${idInstance}/sendMessage/${apiTokenInstance}`, 'POST', { chatId, message })
+            .then(data => displayResponse(data));
+    }
+
+    function sendFileByUrl() {
+        const idInstance = document.getElementById('idInstance').value;
+        const apiTokenInstance = document.getElementById('apiTokenInstance').value;
+        const chatId = document.getElementById('chatIdFile').value;
+        const urlFile = document.getElementById('urlFile').value;
+        const fileName = document.getElementById('fileName').value;
+        const caption = document.getElementById('caption').value;
+
+        fetchApi(`https://api.green-api.com/waInstance${idInstance}/sendFileByUrl/${apiTokenInstance}`, 'POST', { chatId, urlFile, fileName, caption })
+            .then(data => displayResponse(data));
+    }
+
+    function displayResponse(data) {
+        const responseDiv = document.getElementById('response');
+        responseDiv.innerText = JSON.stringify(data, null, 2);
+    }
+</script>
+</body>
+
+</html>
